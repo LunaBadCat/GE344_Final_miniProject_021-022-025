@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <title>Map</title>
+    <style>
+        #mapid {
+            width: 90%;
+            height: 100vh;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+          integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+          crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin=""></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+
+    <style>
+        .custom-button {
+          display: inline-block;
+          padding: 10px;
+          background-color: #333;
+          color: #fff;
+          text-decoration: none;
+          border: none;
+          border-radius: 20px;
+          font-size: 20px;
+          cursor: pointer;
+          margin-bottom: 10px;
+        }
+    
+        .custom-button:hover {
+          background-color: grey;
+        }
+        @media (max-width: 767px) {
+      /* Adjust styles for mobile devices */
+      .button {
+        padding: 8px 16px;
+        font-size: 14px;
+      }  }
+      </style>
+
+<style>
+    /* Header Styles */
+    header {
+      background-color: #333;
+      color: #fff;
+      padding: 20px;
+      text-align: Center;
+    }
+
+    /* Footer Styles */
+    footer {
+      background-color: #333;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+
+    /* Optional additional styling */
+    footer p {
+      margin: 0;
+    }
+  </style>
+</style>
+<style>
+  /* Box Styles */
+  .text-box {
+    background-color: #f2f2f2;
+    border: 1px solid #ccc;
+    padding: 20px;
+    margin: 20px;
+    border-radius: 5px;
+  }
+</style>
+<style>
+  .fixed-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 9999;
+  /* Additional styling properties */
+}
+
+.content {
+  padding-top: 95px; /* Adjust the value to create the desired space below the header */
+  /* Additional styling properties */
+}
+
+</style>
+</head>
+<body>
+    
+    <center>
+    <header class="fixed-header">
+        <h1>Heat Detected Map Website</h1>
+      </header>
+<main class="content">
+    <div class="text-box">
+        
+      <a class="container-fluid col-xs-12 col-sm-12 col-md-12 col-xl-2 custom-button" href="index.html" target="_self">Home page</a>
+      <a class="container-fluid col-xs-12 col-sm-12 col-md-12 col-xl-2 custom-button" href="Survive.html" target="_self">How to Survive</a> 
+      <a class="container-fluid col-xs-12 col-sm-12 col-md-12 col-xl-2 custom-button" href="gallery.html" target="_self">Gallery</a>
+      <a class="container-fluid col-xs-12 col-sm-12 col-md-12 col-xl-2 custom-button" href="contact.html" target="_self">
+        Contact us
+      </a>
+      <a class="container-fluid col-xs-12 col-sm-12 col-md-12 col-xl-2 custom-button" href="reference.html" target="_self">Reference</a>
+    </div>
+<div class="text-box">
+    <h2>Heat map of Thailand</h2>
+    <hr>
+    <br>
+    <div id="mapid"></div>
+<script>
+    // Initialize the map
+    var mymap = L.map('mapid').setView([13.736717, 100.524348], 6);
+
+    // Set up the OSM layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: 'Map data &copy; OpenStreetMap contributors'
+    }).addTo(mymap);
+
+    // Get data from API
+    $.get('https://firms.modaps.eosdis.nasa.gov/api/country/csv/e79fb93b35dcec1bcf0230438f61b369/VIIRS_NOAA20_NRT/THA/10', function(data){
+        var results = Papa.parse(data, {
+            header: true
+        });
+        var currentDate = new Date();
+        var oneDay = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+
+        var redMarkers = L.layerGroup();
+        var orangeMarkers = L.layerGroup();
+        var yellowMarkers = L.layerGroup();
+
+        results.data.forEach(function(fields){
+            if(fields.latitude && fields.longitude){
+                var latitude = parseFloat(fields.latitude);
+                var longitude = parseFloat(fields.longitude);
+                var acqDate = new Date(fields.acq_date);
+                var daysDifference = Math.round((currentDate - acqDate) / oneDay);
+                var color = "";
+
+                if(daysDifference <= 1){
+                    color = "red";
+                    L.circleMarker([latitude, longitude], { radius: 5, color: color }).addTo(redMarkers);
+                } else if(daysDifference <= 3){
+                    color = "orange";
+                    L.circleMarker([latitude, longitude], { radius: 5, color: color }).addTo(orangeMarkers);
+                } else if(daysDifference <= 7){
+                    color = "yellow";
+                    L.circleMarker([latitude, longitude], { radius: 5, color: color }).addTo(yellowMarkers);
+                }
+            }
+        });
+
+        var overlays = {
+            "Red Markers (<= 1 day)": redMarkers,
+            "Orange Markers (1-3 days)": orangeMarkers,
+            "Yellow Markers (3-7 days)": yellowMarkers
+        };
+
+        L.control.layers(null, overlays).addTo(mymap);
+    });
+
+</script></div>
+    <div class="text-box">
+        <h2>Information</h2>
+        <hr>
+        
+
+<h5>
+  The map showcases heat spots obtained from <a href="https://firms.modaps.eosdis.nasa.gov/map/">
+    Fire Information for Resource Management System (FIRMS)</a>.<br>
+  FIRMS is a website that provides access to both current and historical information regarding hot spots. <br>
+  Our objective is to present this information on a map encompassing the boundaries of Thailand. <br>
+  The data is represented as points on the map, and users have the option to select from three different <br>
+  time periods corresponding to the occurrence of these points:
+  <br><br>
+  1.Red dots indicate heat points that have occurred within the past 1 day. <br><br>
+  2.Orange dots represent heat spots observed within the past 1-3 days. <br><br>
+  3.Yellow dots signify heat spots that have been recorded within the past 3-7 days.</h5>
+    </div>
+
+</main>
+  <footer>
+    <p>GE344 : WEB-BASED GEOGRAPHIC INFOMATION SYSTEM</p>
+  </footer>
+
+
+</center>
+</body>
+</html>
